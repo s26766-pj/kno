@@ -84,6 +84,8 @@ def train_model(epochs=50, batch_size=32, learning_rate=0.001):
     plt.show()
 
     # Zwracamy wytrenowany model, żeby można go było później używać do predykcji
+    # Zapisz model do pliku .keras
+    model.save("trained_model_for_diabetes_prediction.keras")
     return model
 
 
