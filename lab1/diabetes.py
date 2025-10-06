@@ -2,6 +2,7 @@
 import pandas as pd                    # do pracy z plikami CSV (tabele danych)
 import matplotlib.pyplot as plt        # do rysowania wykresów
 import tensorflow
+import os
 from sklearn.model_selection import train_test_split   # do podziału danych na trening/test
 from sklearn.preprocessing import StandardScaler       # do normalizacji danych
 from tensorflow import keras
@@ -11,7 +12,9 @@ from tensorflow import keras
 def train_model(epochs=50, batch_size=32, learning_rate=0.001):
     # 1. Wczytanie danych
     # Otwieramy plik CSV z danymi o cukrzycy
-    df = pd.read_csv("data/diabetes.csv")
+    # Używamy os.path.join() żeby ścieżka działała niezależnie od systemu operacyjnego
+    data_path = os.path.join(os.path.dirname(__file__), "data", "diabetes.csv")
+    df = pd.read_csv(data_path)
 
     # X = dane wejściowe (wszystkie kolumny oprócz "Outcome")
     X = df.drop("Outcome", axis=1).values
@@ -85,7 +88,7 @@ def train_model(epochs=50, batch_size=32, learning_rate=0.001):
 
     # Zwracamy wytrenowany model, żeby można go było później używać do predykcji
     # Zapisz model do pliku .keras
-    model.save("trained_model_for_diabetes_prediction.keras")
+    model.save("lab1/trained_model_for_diabetes_prediction.keras")
     return model
 
 
