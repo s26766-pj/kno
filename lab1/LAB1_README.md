@@ -1,7 +1,7 @@
 > [!NOTE]
 >  Model przewidywania cukrzycy powstał tylko na potrzeby laboratorów.
 
-> [!WARNING]
+> [!UWAGA]
 > Nie należy sugerować się wynikami modelu do przewidywania cukrzycy.
 
 > [!TIP]
