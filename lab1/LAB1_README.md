@@ -1,17 +1,17 @@
 > [!NOTE]
->  Model przewidywania cukrzycy powstał tylko na potrzeby laboratorów.
+>  The diabetes prediction model was created solely for laboratory purposes.
 
-> [!UWAGA]
-> Nie należy sugerować się wynikami modelu do przewidywania cukrzycy.
+> [!WARNING]
+> The results of the diabetes prediction model should not be relied upon.
 
 > [!TIP]
-> Na początek należy uruchomić plik **diabetes.py** aby wytrenować model.
+> First, run the **diabetes.py** file to train the model.
 > `python diabetes.py`
-> Następnie należy uruchomić plik **predict.py** i podać wartości w oknie do pobierania danych.
+> Then run the **predict.py** file and enter the values in the data download window.
 > `python predict.py`
 
 > [!IMPORTANT]
-> Aby wszystko zadziałało poprawnie, należy zainstalować wymagane pakiety np. przez program **pip**
+> To work correctly, please install the required packages, e.g. via the **pip** program.
 > ```
 > pip install scikit-learn
 > pip install tensorflow
