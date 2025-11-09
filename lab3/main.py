@@ -1,4 +1,6 @@
 import argparse
+
+import joblib
 import numpy as np
 from tensorflow.keras.models import load_model
 
@@ -31,7 +33,7 @@ def main():
     model = load_model(args.model)
 
     # Wektor wejściowy dla predykcji – musi mieć 13 cech
-    x = np.array([[args.alcohol,
+    user_input = np.array([[args.alcohol,
                    args.malic_acid,
                    args.ash,
                    args.alcalinity,
@@ -45,8 +47,11 @@ def main():
                    args.od280_od315,
                    args.proline]])
 
+    scaler = joblib.load("models/scaler.save")
+    user_input_scaled = scaler.transform(user_input)
+
     # Predykcja modelu Softmax (zwraca prawdopodobieństwa klas)
-    pred = model.predict(x)
+    pred = model.predict(user_input_scaled)
     predicted_class = np.argmax(pred, axis=1)[0] + 1  # +1 bo klasy to 1,2,3
 
     print("\n===== WYNIK KLASYFIKACJI WINA =====")

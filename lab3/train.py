@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+import joblib
+
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from tensorflow.keras.models import Sequential
@@ -38,6 +40,13 @@ y = to_categorical(y, num_classes=3)
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, shuffle=True
 )
+
+
+# Normalizacja danych wejściowych
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+
+X_test = scaler.transform(X_test)
 
 # ============================================================
 # 3. Model A – prosty MLP
@@ -156,6 +165,10 @@ plt.ylabel("Strata")
 plt.legend()
 plt.savefig("results/modelB_loss_curves.png", dpi=200)
 plt.close()
+
+os.makedirs("models", exist_ok=True)
+joblib.dump(scaler, "models/scaler.save")
+print("Scaler zapisany do models/scaler.save")
 
 print("📁 Wykresy zapisane w folderze: results/")
 print("\n✅ Trening zakończony pomyślnie!")
