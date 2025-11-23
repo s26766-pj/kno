@@ -7,7 +7,7 @@ from tensorflow.keras.models import load_model
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Wine Classification using Softmax Neural Network")
 
-    parser.add_argument("--model", type=str, default="models/modelB.h5",
+    parser.add_argument("--model", type=str, default="models/final_model.h5",
                         help="Ścieżka do wytrenowanego modelu (.h5). Domyślnie modelB.h5")
 
     parser.add_argument("--alcohol", type=float, required=True)
