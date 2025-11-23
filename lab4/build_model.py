@@ -60,7 +60,7 @@ y = to_categorical(y, num_classes=3)
 
 # podział na zbiór treningowy i testowy (80/20)
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, shuffle=True
+    X, y, test_size=0.2, random_state=1, shuffle=True
 )
 
 # standaryzacja cech: mean=0, std=1
