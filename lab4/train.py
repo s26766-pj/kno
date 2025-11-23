@@ -1,182 +1,144 @@
 import argparse
+import json
 import os
 import pandas as pd
-import keras_tuner as kt
-
+import numpy as np
+import matplotlib.pyplot as plt
+import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.utils import to_categorical
 
-import joblib
+
+# ============================================================
+# ARGPARSE
+# ============================================================
+parser = argparse.ArgumentParser(description="Train final model with given hyperparameters")
+parser.add_argument("--params", type=str, default="models/best_params.json")
+parser.add_argument("--epochs", type=int, default=50)
+parser.add_argument("--batch_size", type=int, default=8)
+args = parser.parse_args()
 
 
 # ============================================================
-# 1. Parsowanie argumentów CLI
+# WCZYTANIE PARAMETRÓW
 # ============================================================
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="Train wine classifier with Keras Tuner")
-
-    parser.add_argument("--max_trials", type=int, default=10,
-                        help="Ile konfiguracji hiperparametrów testować")
-    parser.add_argument("--executions", type=int, default=1,
-                        help="Ile razy trenować każdą konfigurację")
-    parser.add_argument("--epochs", type=int, default=50,
-                        help="Maksymalna liczba epok")
-    parser.add_argument("--batch_size", type=int, default=8,
-                        help="Batch size (gdy używany przez tunera)")
-    parser.add_argument("--tuner", type=str, choices=["random", "bayesian", "hyperband"],
-                        default="random", help="Rodzaj tunera Keras")
-
-    return parser.parse_args()
+with open(args.params, "r") as f:
+    hp = json.load(f)
 
 
 # ============================================================
-# 2. Wczytanie danych
+# WCZYTANIE I PRZYGOTOWANIE DANYCH
 # ============================================================
+data_path = "data/wine.data"
+columns = [
+    "class", "alcohol", "malic_acid", "ash", "alcalinity_of_ash", "magnesium",
+    "total_phenols", "flavanoids", "nonflavanoid_phenols", "proanthocyanins",
+    "color_intensity", "hue", "od280/od315", "proline"
+]
 
-def load_data():
-    data_path = "data/wine.data"
+df = pd.read_csv(data_path, header=None, names=columns)
 
-    columns = [
-        "class", "alcohol", "malic_acid", "ash", "alcalinity_of_ash", "magnesium",
-        "total_phenols", "flavanoids", "nonflavanoid_phenols", "proanthocyanins",
-        "color_intensity", "hue", "od280/od315", "proline"
-    ]
+X = df.drop("class", axis=1).values
+y = df["class"].values - 1
+y = to_categorical(y, num_classes=3)
 
-    df = pd.read_csv(data_path, header=None, names=columns)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, shuffle=True
+)
 
-    X = df.drop("class", axis=1).values
-    y = df["class"].values - 1
-    y = to_categorical(y, num_classes=3)
+# ===================== SCALER =====================
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, shuffle=True
-    )
-
-    scaler = StandardScaler()
-    X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
-
-    return X_train, X_test, y_train, y_test, scaler
+os.makedirs("models", exist_ok=True)
+os.makedirs("results", exist_ok=True)
 
 
 # ============================================================
-# 3. Funkcja budująca model (KERAS TUNER)
+# BUDOWA MODELU
 # ============================================================
+model = Sequential()
 
-def build_model(hp: kt.HyperParameters):
-    model = Sequential(name="WineModel")
+num_layers = hp["num_layers"]
 
-    # Ilość neuronów w 1 warstwie
-    hp_units1 = hp.Int("units_layer1", min_value=8, max_value=128, step=8)
-    model.add(Dense(hp_units1, activation="relu", input_shape=(13,)))
+for i in range(num_layers):
+    units = hp[f"units_{i}"]
+    model.add(Dense(units, activation="relu"))
 
-    # Batch Norm jako opcjonalna
-    if hp.Boolean("use_batchnorm_1"):
+    if hp.get(f"batchnorm_{i}", False):
         model.add(BatchNormalization())
 
-    # Dropout w 1 warstwie
-    hp_dropout1 = hp.Float("dropout_1", 0.0, 0.5, step=0.1)
-    model.add(Dropout(hp_dropout1))
+    if hp.get(f"dropout_{i}", False):
+        rate = hp.get(f"dropout_rate_{i}", 0.2)
+        model.add(Dropout(rate))
 
-    # Druga warstwa (opcjonalna)
-    if hp.Boolean("use_second_layer"):
-        units2 = hp.Int("units_layer2", min_value=8, max_value=64, step=8)
-        model.add(Dense(units2, activation="relu"))
-        if hp.Boolean("use_batchnorm_2"):
-            model.add(BatchNormalization())
-        dropout2 = hp.Float("dropout_2", 0.0, 0.5, step=0.1)
-        model.add(Dropout(dropout2))
+model.add(Dense(3, activation="softmax"))
 
-    # Wyjście
-    model.add(Dense(3, activation="softmax"))
+model.compile(
+    optimizer=Adam(learning_rate=hp["lr"]),
+    loss=CategoricalCrossentropy(from_logits=False),
+    metrics=["accuracy"]
+)
 
-    # Learning rate tunowany
-    lr = hp.Float("learning_rate", min_value=1e-4, max_value=1e-1, sampling="log")
-    optimizer = Adam(learning_rate=lr)
-
-    model.compile(
-        optimizer=optimizer,
-        loss=CategoricalCrossentropy(),
-        metrics=["accuracy"]
-    )
-
-    return model
+print("\n===== Final Model Summary =====")
+model.summary()
 
 
 # ============================================================
-# 4. Wybór tunera
+# TRENING MODELU
 # ============================================================
-
-def get_tuner(tuner_name, build_fn, args, X_train, y_train):
-    if tuner_name == "random":
-        return kt.RandomSearch(
-            build_fn,
-            objective="val_accuracy",
-            max_trials=args.max_trials,
-            executions_per_trial=args.executions,
-            directory="tuner_results",
-            project_name="random_tuner"
-        )
-
-    elif tuner_name == "bayesian":
-        return kt.BayesianOptimization(
-            build_fn,
-            objective="val_accuracy",
-            max_trials=args.max_trials,
-            executions_per_trial=args.executions,
-            directory="tuner_results",
-            project_name="bayesian_tuner"
-        )
-
-    elif tuner_name == "hyperband":
-        return kt.Hyperband(
-            build_fn,
-            objective="val_accuracy",
-            max_epochs=args.epochs,
-            directory="tuner_results",
-            project_name="hyperband_tuner"
-        )
+history = model.fit(
+    X_train, y_train,
+    validation_data=(X_test, y_test),
+    epochs=args.epochs,
+    batch_size=args.batch_size,
+    verbose=1
+)
 
 
 # ============================================================
-# 5. Główna funkcja
+# ZAPIS MODELU + SCALER
+# ============================================================
+model.save("models/final_model.h5")
+joblib.dump(scaler, "models/scaler.save")
+
+print("\n====================================")
+print(" Finalny model zapisany: models/final_model.h5")
+print(" Scaler zapisany: models/scaler.save")
+print("====================================")
+
+
+# ============================================================
+# GENEROWANIE WYKRESÓW
 # ============================================================
 
-def main():
-    args = parse_args()
+# ------ ACCURACY ------
+plt.figure()
+plt.plot(history.history["accuracy"], label="train_accuracy")
+plt.plot(history.history["val_accuracy"], label="val_accuracy")
+plt.title("Final Model – Accuracy")
+plt.xlabel("Epoch")
+plt.ylabel("Accuracy")
+plt.legend()
+plt.savefig("results/final_model_accuracy.png", dpi=200)
+plt.close()
 
-    X_train, X_test, y_train, y_test, scaler = load_data()
+# ------ LOSS ------
+plt.figure()
+plt.plot(history.history["loss"], label="train_loss")
+plt.plot(history.history["val_loss"], label="val_loss")
+plt.title("Final Model – Loss")
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.legend()
+plt.savefig("results/final_model_loss.png", dpi=200)
+plt.close()
 
-    tuner = get_tuner(args.tuner, build_model, args, X_train, y_train)
-
-    tuner.search(
-        X_train, y_train,
-        validation_data=(X_test, y_test),
-        epochs=args.epochs,
-        batch_size=args.batch_size
-    )
-
-    # Najlepszy model
-    best_model = tuner.get_best_models(num_models=1)[0]
-
-    # Zapis
-    os.makedirs("models", exist_ok=True)
-    best_model.save("models/best_wine_model.h5")
-    joblib.dump(scaler, "models/scaler.save")
-
-    print("\n===============================")
-    print("Najlepsze hiperparametry:")
-    best_hp = tuner.get_best_hyperparameters()[0]
-    print(best_hp.values)
-    print("===============================")
-
-
-if __name__ == "__main__":
-    main()
+print("📁 Wykresy zapisane w folderze: results/")
+print("✅ Trening zakończony pomyślnie!\n")
