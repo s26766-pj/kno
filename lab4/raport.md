@@ -19,7 +19,7 @@ Aktywacja: ReLU dla warstw ukrytych, Softmax dla wyjściowej
 
 2. Metoda tuningu
 
-Wybrano Hyperband (domyślna w Keras Tuner) jako strategię przeszukiwania przestrzeni hiperparametrów, ponieważ pozwala szybko testować wiele kombinacji i efektywnie przydzielać zasoby treningowe. Każda konfiguracja była oceniana na podstawie walidacyjnej dokładności (val_accuracy).
+Wybrano Random Search jako strategię przeszukiwania przestrzeni hiperparametrów, ponieważ pozwala szybko testować wiele kombinacji i efektywnie przydzielać zasoby treningowe. Każda konfiguracja była oceniana na podstawie walidacyjnej dokładności (val_accuracy).
 
 3. Wynik tuningu
 
