@@ -12,6 +12,7 @@ from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.utils import to_categorical
+from sklearn.metrics import confusion_matrix, classification_report
 
 
 # ============================================================
@@ -142,3 +143,24 @@ plt.close()
 
 print("📁 Wykresy zapisane w folderze: results/")
 print("✅ Trening zakończony pomyślnie!\n")
+
+print("\n===== Final Model Summary =====")
+model.summary()
+
+# =================== Ewaluacja ===================
+y_pred_prob = model.predict(X_test)
+y_pred = np.argmax(y_pred_prob, axis=1)
+y_true = np.argmax(y_test, axis=1)
+
+acc = np.mean(y_pred == y_true)
+print(f"\nDokładność na zbiorze testowym: {acc:.4f}\n")
+
+# Macierz pomyłek
+cm = confusion_matrix(y_true, y_pred)
+print("Macierz pomyłek (Confusion Matrix):")
+print(cm)
+
+# Szczegółowy raport klasyfikacji
+report = classification_report(y_true, y_pred, target_names=[f"Class {i}" for i in range(3)])
+print("\nRaport klasyfikacji:")
+print(report)
