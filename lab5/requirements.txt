@@ -4,3 +4,4 @@ numpy
 nnv
 pydot
 graphviz
+keras_tuner
