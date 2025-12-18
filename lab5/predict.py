@@ -22,11 +22,13 @@ CLASS_NAMES = [
 
 def load_and_preprocess_image(path: str) -> np.ndarray:
     """
-    Load an image from disk and preprocess it for the Fashion MNIST models:
-    - Resize to 28x28
-    - Convert to grayscale
-    - Apply negative (invert pixel values)
-    - Return array of shape (1, 28, 28) with values in [0, 255]
+    Load an image from disk and preprocess it for the Fashion MNIST models.
+
+    Steps:
+    - Resize the image to 28x28 pixels.
+    - Convert it to grayscale (single channel).
+    - Apply a negative transform by inverting pixel values.
+    - Return an array of shape (1, 28, 28) suitable for model.predict().
     """
     if not os.path.isfile(path):
         raise FileNotFoundError(f"Image file not found: {path}")
@@ -48,7 +50,13 @@ def load_and_preprocess_image(path: str) -> np.ndarray:
 
 
 def classify_image(model_path: str, image_path: str) -> None:
-    """Load a trained model and classify a single image."""
+    """
+    Load a trained model from disk and classify a single input image.
+
+    The function loads the Keras model (handling legacy softmax names),
+    runs inference on the preprocessed image, and prints the predicted
+    class index, human-readable class name, and prediction confidence.
+    """
     if not os.path.isfile(model_path):
         raise FileNotFoundError(f"Model file not found: {model_path}")
 
@@ -74,6 +82,12 @@ def classify_image(model_path: str, image_path: str) -> None:
 
 
 def main() -> None:
+    """
+    Entry point for the prediction script.
+
+    Reads the image path and optional model path from the command line,
+    then performs classification and prints the result to stdout.
+    """
     parser = argparse.ArgumentParser(description="Classify an image using a trained Fashion MNIST model.")
     parser.add_argument("image", help="Path to the input image file.")
     parser.add_argument(

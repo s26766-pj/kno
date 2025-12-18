@@ -21,6 +21,7 @@ plt.colormaps()
 plt.show()
 
 # Normalization layer to standardize input images; we adapt once on the training set
+# so that all models (FC and CNN) see zero-mean, unit-variance inputs.
 normalization_layer = keras.layers.Normalization(input_shape=(28, 28), axis=None)
 normalization_layer.adapt(train_images)
 
@@ -30,7 +31,13 @@ NORM_VAR = normalization_layer.variance.numpy()
 
 
 def create_fc_model() -> keras.Model:
-    """Create a simple fully connected model."""
+    """
+    Create a simple fully connected (dense) model for Fashion MNIST.
+
+    The model expects inputs of shape (28, 28), applies the shared
+    normalization layer, flattens the image, and passes it through
+    one hidden dense layer and a softmax output with 10 classes.
+    """
     model = keras.Sequential([
         normalization_layer,
         keras.layers.Flatten(),
@@ -41,7 +48,13 @@ def create_fc_model() -> keras.Model:
 
 
 def create_cnn_model() -> keras.Model:
-    """Create a simple convolutional model."""
+    """
+    Create a simple convolutional model for Fashion MNIST.
+
+    The model first normalizes the (28, 28) input, reshapes it to
+    (28, 28, 1), applies a Conv2D + MaxPooling2D stack, then flattens
+    and feeds into a dense hidden layer and a 10-way softmax output.
+    """
     model = keras.Sequential([
         normalization_layer,
         keras.layers.Reshape((28, 28, 1)),
@@ -55,6 +68,14 @@ def create_cnn_model() -> keras.Model:
 
 
 def main() -> None:
+    """
+    Parse CLI arguments, train the requested model, and save artifacts.
+
+    The user can choose the architecture (fully connected or CNN) and
+    optionally enable simple data augmentation. The script trains the
+    model, evaluates it, saves the model to the `models` directory,
+    and writes metrics and plots to the `metrics` directory.
+    """
     parser = argparse.ArgumentParser(description="Train Fashion MNIST model (fc or cnn).")
     parser.add_argument(
         "--arch",
@@ -69,13 +90,13 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # Ensure output directories exist
+    # Ensure output directories exist for models and metrics
     models_dir = "models"
     metrics_dir = "metrics"
     os.makedirs(models_dir, exist_ok=True)
     os.makedirs(metrics_dir, exist_ok=True)
 
-    # Choose base name for files (optionally suffixed with "_augment")
+    # Choose model architecture and base filename (optionally suffixed with "_augment")
     if args.arch == "fc":
         model = create_fc_model()
         base_name = "model_fc"
